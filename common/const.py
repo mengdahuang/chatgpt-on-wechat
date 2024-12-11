@@ -9,7 +9,7 @@ CLAUDEAI = "claude"  # 使用cookie的历史模型
 CLAUDEAPI= "claudeAPI"  # 通过Claude api调用模型
 QWEN = "qwen"  # 旧版通义模型
 QWEN_DASHSCOPE = "dashscope"  # 通义新版sdk和api key
-
+FASTGPT = "fastgpt"
 
 GEMINI = "gemini"  # gemini-1.0-pro
 ZHIPU_AI = "glm-4"
@@ -81,7 +81,7 @@ CLAUDE_3_SONNET = "claude-3-sonnet-20240229"
 CLAUDE_3_HAIKU = "claude-3-haiku-20240307"
 
 MODEL_LIST = [
-              GPT35, GPT35_0125, GPT35_1106, "gpt-3.5-turbo-16k",
+              GPT35, GPT35_0125, GPT35_1106, "gpt-3.5-turbo-16k",FASTGPT,
               O1, O1_MINI, GPT_4o, GPT_4O_0806, GPT_4o_MINI, GPT4_TURBO, GPT4_TURBO_PREVIEW, GPT4_TURBO_01_25, GPT4_TURBO_11_06, GPT4, GPT4_32k, GPT4_06_13, GPT4_32k_06_13,
               WEN_XIN, WEN_XIN_4,
               XUNFEI,
