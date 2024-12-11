@@ -5,7 +5,7 @@ import openai.error
 import requests
 from common import memory, utils, const
 from bot.bot import Bot
-from bot.chatgpt.chat_gpt_session import ChatGPTSession
+from bot.fastgpt.fastgpt_session import FastGPTSession
 from bot.openai.open_ai_image import OpenAIImage
 from bot.session_manager import SessionManager
 from bridge.context import ContextType
@@ -21,7 +21,7 @@ from channel.wechatcom.wechatcomapp_channel import WechatComAppChannel
 from wechatpy.exceptions import WeChatClientException
 
 # OpenAI对话模型API (可用)
-class ChatGPTBot(Bot, OpenAIImage):
+class FastGPTBot(Bot, OpenAIImage):
     def __init__(self):
         super().__init__()
         # set the default api_key
@@ -37,7 +37,7 @@ class ChatGPTBot(Bot, OpenAIImage):
         self.wechat_client = WechatComAppChannel().client
         
         conf_model = conf().get("model") or "gpt-3.5-turbo"
-        self.sessions = SessionManager(ChatGPTSession, model=conf().get("model") or "gpt-3.5-turbo")
+        self.sessions = SessionManager(FastGPTSession, model=conf().get("model") or "gpt-3.5-turbo")
         # o1相关模型不支持system prompt，暂时用文心模型的session
 
         self.args = {
@@ -57,10 +57,31 @@ class ChatGPTBot(Bot, OpenAIImage):
             for key in remove_keys:
                 self.args.pop(key, None)  # 如果键不存在，使用 None 来避免抛出错误
 
+    def get_uname(self, context):
+        msg = context.kwargs['msg']
+        if context.kwargs['isgroup']:
+            uname = msg.actual_user_nickname
+        else:
+            if isinstance(msg, WechatComAppMessage):
+                uname = context["receiver"]
+            else:
+                uname = msg.from_user_nickname
+        return uname
+
     def reply(self, query, context=None):
         # acquire reply content
         if context.type == ContextType.TEXT:
-            logger.info("[CHATGPT] query={}".format(query))
+            # logger.info("[CHATGPT] query={}".format(query))
+            # 2024/10/24 change to below
+            # 获取用户信息
+            uname = self.get_uname(context)
+            logger.info("[user]{}, <<USER_QUESTION_START>> query={} <<USER_QUESTION_END>>".format(uname, query))
+            try:
+                user_info = self.wechat_client.user.get(uname)
+                logger.info(f"获取到的用户信息：{user_info}")
+            except WeChatClientException as e:
+                logger.error(f"无法获取用户信息：{e}")
+                user_info = None
 
             session_id = context["session_id"]
             reply = None
@@ -120,7 +141,7 @@ class ChatGPTBot(Bot, OpenAIImage):
             reply = Reply(ReplyType.ERROR, "Bot不支持处理{}类型的消息".format(context.type))
             return reply
 
-    def reply_text(self, session: ChatGPTSession, api_key=None, args=None, retry_count=0) -> dict:
+    def reply_text(self, session: FastGPTSession, context, api_key=None, args=None, retry_count=0) -> dict:
         """
         call openai's ChatCompletion to get the answer
         :param session: a conversation session
@@ -134,7 +155,33 @@ class ChatGPTBot(Bot, OpenAIImage):
             # if api_key == None, the default openai.api_key will be used
             if args is None:
                 args = self.args
-            response = openai.ChatCompletion.create(api_key=api_key, messages=session.messages, **args)
+            # 为fastgpt增加用户相关字段
+            # 在 args 中添加 chatId（即 session_id）
+            msg = context['msg']
+            args['chatId'] = session.session_id  # 添加 chatId
+            
+            if context['isgroup']:
+                uname = context['msg'].actual_user_nickname
+                roomName = context['msg'].other_user_nickname
+                uid = context["msg"].from_user_id
+            else:
+                if isinstance(msg, WechatComAppMessage):
+                    uname = context["receiver"]  # 私聊中，如果是 WechatComAppMessage，则发送者设为 context["receiver"]
+                    uid = ""
+                else:
+                    uname = context['msg'].from_user_nickname
+                    uid = context["msg"].from_user_id
+                roomName = ""            
+            args['variables'] = {
+                "uid" : uid,  # 发件人ID
+                "uname":uname,  # 私聊发件人
+                # "uname": context["msg"].actual_user_id,
+                # "ualias": context["msg"].actual_user_nickname,  # 群聊发件人
+                "roomName": roomName, # 群
+            }
+            # 为fastgpt增加chatId
+            response = openai.ChatCompletion.create(api_key=api_key, messages=session.messages, chatId=session.session_id, **args)
+            # response = openai.ChatCompletion.create(api_key=api_key, messages=session.messages, **args)
             # logger.debug("[CHATGPT] response={}".format(response))
             # logger.info("[ChatGPT] reply={}, total_tokens={}".format(response.choices[0]['message']['content'], response["usage"]["total_tokens"]))
             return {
@@ -175,80 +222,3 @@ class ChatGPTBot(Bot, OpenAIImage):
                 return self.reply_text(session, api_key, args, retry_count + 1)
             else:
                 return result
-
-
-class AzureChatGPTBot(ChatGPTBot):
-    def __init__(self):
-        super().__init__()
-        openai.api_type = "azure"
-        openai.api_version = conf().get("azure_api_version", "2023-06-01-preview")
-        self.args["deployment_id"] = conf().get("azure_deployment_id")
-
-    def create_img(self, query, retry_count=0, api_key=None):
-        text_to_image_model = conf().get("text_to_image")
-        if text_to_image_model == "dall-e-2":
-            api_version = "2023-06-01-preview"
-            endpoint = conf().get("azure_openai_dalle_api_base","open_ai_api_base")
-            # 检查endpoint是否以/结尾
-            if not endpoint.endswith("/"):
-                endpoint = endpoint + "/"
-            url = "{}openai/images/generations:submit?api-version={}".format(endpoint, api_version)
-            api_key = conf().get("azure_openai_dalle_api_key","open_ai_api_key")
-            headers = {"api-key": api_key, "Content-Type": "application/json"}
-            try:
-                body = {"prompt": query, "size": conf().get("image_create_size", "256x256"),"n": 1}
-                submission = requests.post(url, headers=headers, json=body)
-                operation_location = submission.headers['operation-location']
-                status = ""
-                while (status != "succeeded"):
-                    if retry_count > 3:
-                        return False, "图片生成失败"
-                    response = requests.get(operation_location, headers=headers)
-                    status = response.json()['status']
-                    retry_count += 1
-                image_url = response.json()['result']['data'][0]['url']
-                return True, image_url
-            except Exception as e:
-                logger.error("create image error: {}".format(e))
-                return False, "图片生成失败"
-        elif text_to_image_model == "dall-e-3":
-            api_version = conf().get("azure_api_version", "2024-02-15-preview")
-            endpoint = conf().get("azure_openai_dalle_api_base","open_ai_api_base")
-            # 检查endpoint是否以/结尾
-            if not endpoint.endswith("/"):
-                endpoint = endpoint + "/"
-            url = "{}openai/deployments/{}/images/generations?api-version={}".format(endpoint, conf().get("azure_openai_dalle_deployment_id","text_to_image"),api_version)
-            api_key = conf().get("azure_openai_dalle_api_key","open_ai_api_key")
-            headers = {"api-key": api_key, "Content-Type": "application/json"}
-            try:
-                body = {"prompt": query, "size": conf().get("image_create_size", "1024x1024"), "quality": conf().get("dalle3_image_quality", "standard")}
-                response = requests.post(url, headers=headers, json=body)
-                response.raise_for_status()  # 检查请求是否成功
-                data = response.json()
-
-                # 检查响应中是否包含图像 URL
-                if 'data' in data and len(data['data']) > 0 and 'url' in data['data'][0]:
-                    image_url = data['data'][0]['url']
-                    return True, image_url
-                else:
-                    error_message = "响应中没有图像 URL"
-                    logger.error(error_message)
-                    return False, "图片生成失败"
-
-            except requests.exceptions.RequestException as e:
-                # 捕获所有请求相关的异常
-                try:
-                    error_detail = response.json().get('error', {}).get('message', str(e))
-                except ValueError:
-                    error_detail = str(e)
-                error_message = f"{error_detail}"
-                logger.error(error_message)
-                return False, error_message
-
-            except Exception as e:
-                # 捕获所有其他异常
-                error_message = f"生成图像时发生错误: {e}"
-                logger.error(error_message)
-                return False, "图片生成失败"
-        else:
-            return False, "图片生成失败，未配置text_to_image参数"
