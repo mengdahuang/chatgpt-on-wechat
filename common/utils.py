@@ -72,7 +72,23 @@ def convert_webp_to_png(webp_image):
 
 
 def remove_markdown_symbol(text: str):
-    # 移除markdown格式，目前先移除**
+    # 移除markdown格式，包括 * ， ** ， *** ，#， ##，### 等
     if not text:
         return text
-    return re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+    
+    # 定义正则表达式模式
+    patterns = [
+        r'\*\*\*(.*?)\*\*\*',  # 匹配 ***...***
+        r'\*\*(.*?)\*\*',      # 匹配 **...**
+        r'\*(.*?)\*',          # 匹配 *...*
+        r'### (.*?)\n',        # 匹配 ### ... (标题)
+        r'## (.*?)\n',         # 匹配 ## ... (标题)
+        r'# (.*?)\n'           # 匹配 # ... (标题)
+    ]
+    
+    # 依次应用每个模式进行替换
+    for pattern in patterns:
+        text = re.sub(pattern, r'\1', text)
+    
+    return text
+

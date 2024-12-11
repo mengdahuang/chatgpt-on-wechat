@@ -65,7 +65,9 @@ class ChatChannel(Channel):
                     ]
                 ):
                     group_chat_in_one_session = conf().get("group_chat_in_one_session", [])
-                    session_id = cmsg.actual_user_id
+                    # session_id = cmsg.actual_user_id
+                    session_id = f"{cmsg.actual_user_id}@@{group_id}" # 当群聊未共享session时，session_id为user_id与group_id的组合，用于区分不同群聊以及单聊
+                    context["is_shared_session_group"] = False  # 默认为非共享会话群
                     if any(
                         [
                             group_name in group_chat_in_one_session,
