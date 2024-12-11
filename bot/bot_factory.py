@@ -22,6 +22,11 @@ def create_bot(bot_type):
         from bot.chatgpt.chat_gpt_bot import ChatGPTBot
         return ChatGPTBot()
 
+    elif bot_type == const.FASTGPT:
+        # FASTGPT 网页端web接口
+        from bot.fastgpt.fastgpt_bot import FastGPTBot
+        return FastGPTBot()
+
     elif bot_type == const.OPEN_AI:
         # OpenAI 官方对话模型API
         from bot.openai.open_ai_bot import OpenAIBot

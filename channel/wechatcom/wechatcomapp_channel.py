@@ -60,7 +60,11 @@ class WechatComAppChannel(ChatChannel):
                 self.client.message.send_text(self.agent_id, receiver, text)
                 if i != len(texts) - 1:
                     time.sleep(0.5)  # 休眠0.5秒，防止发送过快乱序
-            logger.info("[wechatcom] Do send text to {}: {}".format(receiver, reply_text))
+            # logger.info("[wechatcom] Do send text to {}: {}".format(receiver, reply_text))
+            # 预处理 reply_text，移除换行符和多余的空白字符
+            processed_reply_text = ' '.join(reply_text.split())
+            logger.info("[wechatcom] Do send text to {}: <<AI_REPLY_START>> {} <<AI_REPLY_END>>".format(receiver, processed_reply_text))
+            
         elif reply.type == ReplyType.VOICE:
             try:
                 media_ids = []
@@ -180,6 +184,10 @@ class Query:
                 isgroup=False,
                 msg=wechatcom_msg,
             )
+            # 添加用户身份信息到 context.kwargs
+            context.kwargs["receiver"] = context["receiver"]
+            context.kwargs["msg"] = wechatcom_msg
+            context.kwargs["isgroup"] = False  # 企业微信应用消息不涉及群聊，设置为 False
             if context:
                 channel.produce(context)
         return "success"
