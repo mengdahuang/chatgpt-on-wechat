@@ -12,7 +12,7 @@ from common import const
 """
 
 
-class ChatGPTSession(Session):
+class FastGPTSession(Session):
     def __init__(self, session_id, system_prompt=None, model="gpt-3.5-turbo"):
         super().__init__(session_id, system_prompt)
         self.model = model
