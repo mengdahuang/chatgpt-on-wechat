@@ -158,7 +158,7 @@ class FastGPTBot(Bot, OpenAIImage):
             # 为fastgpt增加用户相关字段
             # 在 args 中添加 chatId（即 session_id）
             msg = context['msg']
-            args['chatId'] = session.session_id  # 添加 chatId
+            # args['chatId'] = session.session_id  # 添加 chatId
             
             if context['isgroup']:
                 uname = context['msg'].actual_user_nickname
@@ -190,28 +190,29 @@ class FastGPTBot(Bot, OpenAIImage):
                 "content": response.choices[0]["message"]["content"],
             }
         except Exception as e:
+            status_url = "https://status.cloudosd.com/status/service-ait"
             need_retry = retry_count < 2
-            result = {"completion_tokens": 0, "content": "我现在有点累了，等会再来吧"}
+            result = {"completion_tokens": 0, "content": "服务异常，请稍后再试。\n当前AiT状态【异常】，实时状态查询: "+ status_url}
             if isinstance(e, openai.error.RateLimitError):
                 logger.warn("[CHATGPT] RateLimitError: {}".format(e))
-                result["content"] = "提问太快啦，请休息一下再问我吧"
+                result["content"] = "提问太快啦，请稍后再试。\n错误信息：{}\n当前AiT状态【异常】，实时状态查询: {}".format(error_message, status_url)
                 if need_retry:
-                    time.sleep(20)
+                    time.sleep(2)
             elif isinstance(e, openai.error.Timeout):
                 logger.warn("[CHATGPT] Timeout: {}".format(e))
-                result["content"] = "我没有收到你的消息"
+                result["content"] = "会话超时，请稍后再试。\n错误信息：{}\n当前AiT状态【异常】，实时状态查询: {}".format(error_message, status_url)
                 if need_retry:
-                    time.sleep(5)
+                    time.sleep(2)
             elif isinstance(e, openai.error.APIError):
                 logger.warn("[CHATGPT] Bad Gateway: {}".format(e))
-                result["content"] = "请再问我一次"
+                result["content"] = "API请求出错，请稍后再试。\n错误信息：{}\n当前AiT状态【异常】，实时状态查询: {}".format(error_message, status_url)
                 if need_retry:
-                    time.sleep(10)
+                    time.sleep(2)
             elif isinstance(e, openai.error.APIConnectionError):
                 logger.warn("[CHATGPT] APIConnectionError: {}".format(e))
-                result["content"] = "我连接不到你的网络"
+                result["content"] = "API网络连接异常，请稍后再试。\n错误信息：{}\n当前AiT状态【异常】，实时状态查询: {}".format(error_message, status_url)
                 if need_retry:
-                    time.sleep(5)
+                    time.sleep(2)
             else:
                 logger.exception("[CHATGPT] Exception: {}".format(e))
                 need_retry = False
