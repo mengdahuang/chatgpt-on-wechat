@@ -6,6 +6,7 @@ import sys
 import time
 
 from channel import channel_factory
+from channel.chat_message import ChatMessage
 from common import const
 from config import load_config
 from plugins import *
