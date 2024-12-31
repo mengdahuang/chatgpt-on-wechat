@@ -59,6 +59,8 @@ LINKAI_4o = "linkai-4o"
 GEMINI_PRO = "gemini-1.0-pro"
 GEMINI_15_flash = "gemini-1.5-flash"
 GEMINI_15_PRO = "gemini-1.5-pro"
+GEMINI_20_flash_exp = "gemini-2.0-flash-exp"
+
 
 GLM_4 = "glm-4"
 GLM_4_PLUS = "glm-4-plus"
@@ -80,6 +82,8 @@ CLAUDE_3_SONNET = "claude-3-sonnet-20240229"
 
 CLAUDE_3_HAIKU = "claude-3-haiku-20240307"
 
+GITEE_AI_MODEL_LIST = ["Yi-34B-Chat", "InternVL2-8B", "deepseek-coder-33B-instruct", "InternVL2.5-26B", "Qwen2-VL-72B", "Qwen2.5-32B-Instruct", "glm-4-9b-chat", "codegeex4-all-9b", "Qwen2.5-Coder-32B-Instruct", "Qwen2.5-72B-Instruct", "Qwen2.5-7B-Instruct", "Qwen2-72B-Instruct", "Qwen2-7B-Instruct", "code-raccoon-v1", "Qwen2.5-14B-Instruct"]
+
 MODEL_LIST = [
               GPT35, GPT35_0125, GPT35_1106, "gpt-3.5-turbo-16k",FASTGPT,
               O1, O1_MINI, GPT_4o, GPT_4O_0806, GPT_4o_MINI, GPT4_TURBO, GPT4_TURBO_PREVIEW, GPT4_TURBO_01_25, GPT4_TURBO_11_06, GPT4, GPT4_32k, GPT4_06_13, GPT4_32k_06_13,
@@ -87,13 +91,14 @@ MODEL_LIST = [
               XUNFEI,
               ZHIPU_AI, GLM_4, GLM_4_PLUS, GLM_4_flash, GLM_4_LONG, GLM_4_ALLTOOLS, GLM_4_0520, GLM_4_AIR, GLM_4_AIRX,
               MOONSHOT, MiniMax,
-              GEMINI, GEMINI_PRO, GEMINI_15_flash, GEMINI_15_PRO,
+              GEMINI, GEMINI_PRO, GEMINI_15_flash, GEMINI_15_PRO,GEMINI_20_flash_exp,
               CLAUDE_3_OPUS, CLAUDE_3_OPUS_0229, CLAUDE_35_SONNET, CLAUDE_35_SONNET_1022, CLAUDE_35_SONNET_0620, CLAUDE_3_SONNET, CLAUDE_3_HAIKU, "claude", "claude-3-haiku", "claude-3-sonnet", "claude-3-opus", "claude-3.5-sonnet",
               "moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k",
               QWEN, QWEN_TURBO, QWEN_PLUS, QWEN_MAX,
               LINKAI_35, LINKAI_4_TURBO, LINKAI_4o
             ]
 
+MODEL_LIST = MODEL_LIST + GITEE_AI_MODEL_LIST
 # channel
 FEISHU = "feishu"
 DINGTALK = "dingtalk"
